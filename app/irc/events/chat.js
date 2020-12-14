@@ -2,7 +2,6 @@
 
 const twitch = require('../util');
 const handlers = require('../handlers');
-const { isBroadcaster } = require('../util');
 
 module.exports = (socket, channel, user, messageRaw, self) => {
   // Ignore self

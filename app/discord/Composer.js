@@ -1,13 +1,13 @@
 'use strict';
 
-const { RichEmbed } = require('discord.js');
+const { MessageEmbed } = require('discord.js');
 
 /**
  * Composer for rich Discord embeds.
- * @extends {RichEmbed}
+ * @extends {MessageEmbed}
  * @private
  */
-class Composer extends RichEmbed {
+class Composer extends MessageEmbed {
   /**
    * Create a new composer instance.
    * @param {Object} options

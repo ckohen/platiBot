@@ -7,28 +7,29 @@ module.exports = {
   role: 'DJ',
 
   async run(socket, message) {
-    var voiceChannel = message.member.voiceChannel;
+    var voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return message.reply('Join a channel and try again');
 
+    let musicData = socket.musicData.get(String(message.guild.id));
     if (
-      typeof socket.musicData.songDispatcher == 'undefined' ||
-      socket.musicData.songDispatcher == null
+      typeof musicData.songDispatcher == 'undefined' ||
+      musicData.songDispatcher == null
     ) {
       return message.reply('There is no song playing right now!');
     }
 
-    if (socket.musicData.queue.length < 1)
+    if (musicData.queue.length < 1)
       return message.reply('There are no songs in queue');
 
-    shuffleQueue(socket.musicData.queue);
+    shuffleQueue(musicData.queue);
 
     const titleArray = [];
-    socket.musicData.queue.slice(0, 10).forEach(obj => {
+    musicData.queue.slice(0, 10).forEach(obj => {
       titleArray.push(obj.title);
     });
     var numOfEmbedFields = 10;
     if (titleArray.length < 10) numOfEmbedFields = titleArray.length;
-    var queueEmbed = socket.getEmbed('queue', []);
+    var queueEmbed = socket.getEmbed('queue', [musicData.queue]);
     for (let i = 0; i < numOfEmbedFields; i++) {
       queueEmbed.addField(`${i + 1}:`, `${titleArray[i]}`);
     }

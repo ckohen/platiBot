@@ -8,17 +8,18 @@ module.exports = {
 
   async run(socket, message, args) {
     numOfTimesToLoop = Number(args.join(' '));
-    if (!socket.musicData.isPlaying) {
+    let musicData = socket.musicData.get(String(message.guild.id));
+    if (!musicData.isPlaying) {
       return message.reply('There is no song playing right now!');
     }
 
     for (let i = 0; i < numOfTimesToLoop; i++) {
-      socket.musicData.queue.unshift(socket.musicData.nowPlaying);
+      musicData.queue.unshift(musicData.nowPlaying);
     }
 
     // prettier-ignore
     message.channel.send(
-      `${socket.musicData.nowPlaying.title} looped ${numOfTimesToLoop} ${
+      `${musicData.nowPlaying.title} looped ${numOfTimesToLoop} ${
       (numOfTimesToLoop == 1) ? 'time' : 'times'
       }`
     );

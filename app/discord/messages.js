@@ -34,7 +34,7 @@ module.exports = {
   },
   
   streamUp(role, userLogin, title_url) {
-    return `${role} ` + userLogin + ` is now live at ` + title_url;
+    return `Hey ${role}, ${userLogin} is now live at <${title_url}>! Go check it out!`;
   },
 
   streamDown(userLogin) {

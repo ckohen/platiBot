@@ -32,8 +32,8 @@ module.exports = [
   ['discord_webhook_nickChange', ''],
 
   /* IRC MESSAGES */
-  ['irc_message_cheer', '/me {user} cheered {amount} platicLove !'],
-  ['irc_message_resub', '/me {user} resubbed for {duration}!'],
+  ['irc_message_cheer', '/me Thanks for the {amount}, {user} platicLove !'],
+  ['irc_message_resub', '/me Thanks for the {duration}, {user} platicPog !'],
   ['irc_message_stream_down', '/me Thanks for watching platicLove !'],
   ['irc_message_stream_up', '/me Welcome to the stream early gang!'],
   ['irc_message_sub', '/me {user} just subbed! Welcome to the Corn Crew platicPog !'],

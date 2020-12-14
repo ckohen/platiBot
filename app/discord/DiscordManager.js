@@ -1,6 +1,6 @@
 'use strict';
 
-const { Client, Collection } = require('discord.js');
+const { Client, Collection, MessageEmbed } = require('discord.js');
 const { collect } = require('../util/helpers');
 
 const embeds = require('./embeds');
@@ -9,7 +9,6 @@ const Socket = require('../Socket');
 const commands = require('./commands');
 const Composer = require('./Composer');
 const messages = require('./messages');
-const { role } = require('./commands/music/leave');
 
 /**
  * Discord manager for the application.
@@ -53,7 +52,7 @@ class DiscordManager extends Socket {
      * The Discord driver.
      * @type {Client}
      */
-    this.driver = new Client();
+    this.driver = new Client(this.app.options.discord.options);
 
     /**
      * The commands for the socket, mapped by input.
@@ -65,15 +64,19 @@ class DiscordManager extends Socket {
 
     this.roleManager = new Collection();
 
+    this.reactionRoles = new Collection();
+
+    this.voiceRoles = new Collection();
+
     this.prefixes = new Collection();
 
-    this.musicData = {
-      queue: [],
-      isPlaying: false,
-      nowPlaying: null,
-      songDispatcher: null,
-      volume: 0,
-    };
+    this.rooms = new Collection();
+
+    this.randomSettings = new Collection();
+
+    this.newMemberRoles = new Collection();
+
+    this.musicData = new Collection();
   }
 
   /**
@@ -87,25 +90,83 @@ class DiscordManager extends Socket {
       this.commands.set(command, handler);
     });
 
-    await this.app.database.getRoleManager().then((all) => {
-      this.roleManager.clear();
-      collect(this.roleManager, all, "guildID", false);
-    });
-
-    await this.app.database.getColorManager().then((all) => {
-      this.colorManager.clear();
-      collect(this.colorManager, all, "guildID", false);
-    });
-
-    await this.app.database.getPrefixes().then((all) => {
-      this.prefixes.clear();
-      collect(this.prefixes, all, "guildID", false);
-    });
-
-    this.musicData.volume = Number(this.app.settings.get(`discord_music_volume`));
+    await this.setCache();
 
     return this.driver.login(this.app.options.discord.token).catch((err) => {
       this.app.log.out('error', module, `Login: ${err}`);
+    });
+  }
+
+  /**
+   * Cache all managers and music.
+   * @returns {Promise}
+   */
+  setCache() {
+    return Promise.all([
+      this.cache('getRoleManager', this.roleManager, 'guildID'),
+      this.cache('getColorManager', this.colorManager, 'guildID'),
+      this.cache('getReactionRoles', this.reactionRoles, 'guildID'),
+      this.cache('getVoiceRoles', this.voiceRoles, 'guildID'),
+      this.cache('getPrefixes', this.prefixes, 'guildID'),
+      this.cache('getRandom', this.randomSettings, 'guildID'),
+      this.cache('getAddMembers', this.newMemberRoles, 'guildID'),
+      this.cacheMusic(),
+      this.cacheRooms(),
+    ]).catch((err) => {
+      this.app.log.fatal('critical', module, `Cache: ${err}`);
+    });
+  }
+
+  /**
+   * Cache the music data.
+   * @returns {Promise}
+   */
+  cacheMusic() {
+    return this.app.database.getVolume().then((volumes) => {
+      this.musicData.clear();
+      volumes.forEach((volume) => {
+        if (this.musicData.get(volume.guildID)) {
+          this.musicData.get(volume.guildID).volume = Number(volume.volume);
+        }
+        else {
+          this.musicData.set(volume.guildID, { queue: [], isPlaying: false, nowPlaying: null, songDispatcher: null, volume: Number(volume.volume) });
+        }
+      })
+    })
+  }
+  
+  /**
+   * Cache room data.
+   * @returns {Promise}
+   */
+  cacheRooms() {
+    return this.app.database.getRooms().then((rooms) => {
+      this.rooms.clear();
+      let roomGuild, roomID;
+      let guild;
+      rooms.forEach((room) => {
+        [roomGuild, roomID] = room.guildRoomID.split('-');
+        guild = this.rooms.get(roomGuild);
+        if (!guild) {
+          this.rooms.set(roomGuild, new Collection());
+          guild = this.rooms.get(roomGuild);
+        }
+        guild.set(roomID, room.data);
+      })
+    })
+  }
+
+  /**
+   * Query the database and set a given cache.
+   * @param {string} method
+   * @param {Collection} map
+   * @param {string} key
+   * @returns {Promise}
+   */
+  cache(method, map, key, secondaryKey = false) {
+    return this.app.database[method]().then((all) => {
+      map.clear();
+      collect(map, all, key, secondaryKey);
     });
   }
 
@@ -119,12 +180,12 @@ class DiscordManager extends Socket {
     return id === this.app.settings.get(`discord_channel_${key}`);
   }
 
-    /**
-   * Test a guild ID against the setting for the given key
-   * @param {number} id
-   * @param {string} key
-   * @returns {boolean}
-   */
+  /**
+  * Test a guild ID against the setting for the given key
+  * @param {number} id
+  * @param {string} key
+  * @returns {boolean}
+  */
   isGuild(id, key) {
     return id === this.app.settings.get(`discord_guild_${key}`);
   }
@@ -135,8 +196,8 @@ class DiscordManager extends Socket {
    * @returns {?Channel}
    */
   getChannel(slug) {
-    const id = this.app.settings.get(`discord_channel_${slug}`);
-    return this.driver.channels.get(id);
+    const id = this.app.settings.get(`discord_channel_${slug}`).split(',')[0];
+    return this.driver.channels.cache.get(id);
   }
 
   /**
@@ -194,7 +255,7 @@ class DiscordManager extends Socket {
    * Send a message with the given content and embed.
    * @param {string} slug
    * @param {string|RichEmbed} content
-   * @param {MessageOptions|Attachment|RichEmbed} [embed]
+   * @param {MessageOptions|Attachment|MessageEmbed} [embed]
    */
   sendMessage(slug, content, embed) {
     const channel = this.getChannel(slug);
@@ -213,7 +274,7 @@ class DiscordManager extends Socket {
    * Send a webhook with the given content and embed.
    * @param {string} slug
    * @param {string|RichEmbed} content
-   * @param {WebhookMessageOptions|Attachment|RichEmbed} [embed]
+   * @param {WebhookMessageOptions|Attachment|MessageEmbed} [embed]
    */
   sendWebhook(slug, content, embed) {
     this.getWebhook(slug).then((webhook) => {

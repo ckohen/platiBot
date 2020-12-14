@@ -1,23 +1,35 @@
 'use strict';
 
-module.exports = (socket, guild) => {
-    socket.app.log.out('info', module, "Joined new server: " + guild.name)
+const { collect } = require('../../util/helpers');
 
-    // Add new guild to role and color managers
-    socket.app.database.addColorManager(String(guild.id));
-    socket.app.database.addRoleManager(String(guild.id));
-    socket.app.database.addPrefix(String(guild.id));
+module.exports = async (socket, guild) => {
+  socket.app.log.out('info', module, "Joined new server: " + guild.name)
 
-    // Send info message in system channel
+  // Add new guild to role and color managers
+  await socket.app.database.addColorManager(String(guild.id));
+  await socket.app.database.addRoleManager(String(guild.id));
+  await socket.app.database.addReactionRoles(String(guild.id));
+  await socket.app.database.addVoiceRoles(String(guild.id));
+  await socket.app.database.addPrefix(String(guild.id));
+  await socket.app.database.addRandom(String(guild.id));
+  await socket.app.database.addAddMembers(String(guild.id));
+  await socket.app.database.addVolume(String(guild.id));
 
-    let infoChannel = getFirstSendable();
-    let msg = socket.getEmbed("welcome", []);
+  // Re-cache managers
+  await socket.setCache();
+
+  // Send info message in system channel
+
+  let infoChannel = getFirstSendable();
+  let msg = socket.getEmbed("welcome", []);
+  if (infoChannel) {
     infoChannel.send(msg);
+  }
 
-    function getFirstSendable() {
-        return guild.channels.filter(chan => chan.type === "text" && 
-            chan.permissionsFor(guild.client.user).has("SEND_MESSAGES"))
-        .sort((a, b) => a.position - b.position)
-        .first();
-    }
+  function getFirstSendable() {
+    return guild.channels.cache.filter(chan => chan.type === "text" &&
+      chan.permissionsFor(guild.client.user).has(["SEND_MESSAGES", "VIEW_CHANNEL"]))
+      .sort((a, b) => a.position - b.position)
+      .first();
+  }
 };

@@ -6,29 +6,30 @@ module.exports = {
   role: 'DJ',
 
   async run(socket, message) {
-    var voiceChannel = message.member.voiceChannel;
+    var voiceChannel = message.member.voice.channel;
+    let musicData = socket.musicData.get(String(message.guild.id));
     if (!voiceChannel) {
       message.reply('Join a channel and try again');
       return;
     } else if (
-      typeof socket.musicData.songDispatcher == 'undefined' ||
-      socket.musicData.songDispatcher == null
+      typeof musicData.songDispatcher == 'undefined' ||
+      musicData.songDispatcher == null
     ) {
       message.reply('There is no song playing right now!');
       return;
-    } else if (!socket.musicData.queue) {
+    } else if (!musicData.queue) {
       message.reply('There are no songs in queue');
       return;
-    } else if (socket.musicData.songDispatcher.paused) {
-      socket.musicData.songDispatcher.resume();
+    } else if (musicData.songDispatcher.paused) {
+      musicData.songDispatcher.resume();
       setTimeout(() => {
-        socket.musicData.songDispatcher.end();
+        musicData.songDispatcher.end();
       }, 100);
-      socket.musicData.queue.length = 0;
+      musicData.queue.length = 0;
       return;
     } else {
-      socket.musicData.songDispatcher.end();
-      socket.musicData.queue.length = 0;
+      musicData.songDispatcher.end();
+      musicData.queue.length = 0;
       return;
     }
   }

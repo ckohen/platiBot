@@ -6,7 +6,7 @@ const cache = require('memory-cache');
 const helpers = require.main.require('./app/util/helpers');
 
 module.exports = (socket, payload) => {
-    if (cache.get('video.stream.down') !== null) return;
+    if (cache.get('video.stream.down.ckohen') !== null) return;
 
     const farewell = socket.app.settings.get('irc_message_stream_down');
     socket.app.irc.say(socket.app.options.twitch.channel.name, farewell);
@@ -14,7 +14,7 @@ module.exports = (socket, payload) => {
     socket.app.api.uptime((time) => {
         const duration = time ? `for ${helpers.relativeTime(time, 3)}` : '';
 
-        socket.app.api.channel((channel) => {
+        socket.app.api.userChannel((channel) => {
             let streamPingChannel = socket.app.discord.getChannel('alerts');
             streamPingChannel.bulkDelete(1);
             
@@ -25,12 +25,12 @@ module.exports = (socket, payload) => {
                     channel, channel.game, duration,
                 ]),
             );
-        });
+        }, "ckohen");
 
-        cache.del('stream.uptime');
-    });
+        cache.del('stream.uptime.ckohen');
+    }, "ckohen");
 
     // Throttle additional events
     const tenSecs = 10000;
-    cache.put('video.stream.down', 'trigger', tenSecs);
+    cache.put('video.stream.down.ckohen', 'trigger', tenSecs);
 }

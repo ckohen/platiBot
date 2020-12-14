@@ -1,8 +1,17 @@
 'use strict';
 
-module.exports = (socket, message) => {
+module.exports = async (socket, message) => {
   // Ignore bots
   if (message.author.bot) return;
+
+  if (message.partial) {
+    try {
+      await message.fetch();
+    }
+    catch {
+      return socket.app.log.out('debug', module, "Could not get partial message: " + message.id);
+    }
+  }
 
   // React only in guild text channels
   if (message.channel.type !== 'text') return;
@@ -30,15 +39,18 @@ module.exports = (socket, message) => {
 
   if (!handler) return;
 
-   // Check for guild constraints
-   if (handler.guild && !socket.isGuild(message.guild.id, handler.guild)) return;
+  // Check for guild constraints
+  if (handler.guild && !socket.isGuild(message.guild.id, handler.guild)) return;
 
   // Check for channel constraints
-  if (handler.channel && !socket.isChannel(message.channel.id, handler.channel)) return;
+  if (handler.channel) {
+    let valid = socket.app.settings.get(`discord_channel_${handler.channel}`).split(",");
+    if (valid.indexOf(message.channel.id) < 0) return;
+  }
 
   // Check for role constraints
-  if (handler.role && !message.member.roles.some((role) => role.name === handler.role)) {
-    if (!message.member.hasPermission("MANAGE_ROLES", false, true, true)) {
+  if (handler.role && !message.member.roles.cache.some((role) => role.name === handler.role)) {
+    if (!message.member.hasPermission("MANAGE_ROLES")) {
       message.channel.send(`You're not allowed to do that, ${message.author}.`).catch((err) => {
         socket.app.log.out('error', module, err);
       });

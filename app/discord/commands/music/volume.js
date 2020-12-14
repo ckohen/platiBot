@@ -8,27 +8,28 @@ module.exports = {
 
   async run(socket, message, args) {
     wantedVolume = Number(args[0]);
-    const voiceChannel = message.member.voiceChannel;
+    const voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return message.reply('Join a channel and try again');
 
+    let musicData = socket.musicData.get(String(message.guild.id));
     if (
-      typeof socket.musicData.songDispatcher == 'undefined' ||
-      socket.musicData.songDispatcher == null
+      typeof musicData.songDispatcher == 'undefined' ||
+      musicData.songDispatcher == null
     ) {
       return message.reply('There is no song playing right now!');
     }
     if (wantedVolume <= 100 && wantedVolume >= 0) {
       const volume = wantedVolume / 100;
-      socket.musicData.volume = volume;
-      socket.musicData.songDispatcher.setVolume(volume);
+      musicData.volume = volume;
+      musicData.songDispatcher.setVolume(volume);
       try {
-        await socket.app.database.editSetting(`discord_music_volume`, volume);
+        socket.app.database.editVolume(String(message.guild.id), volume);
       } catch (err) {
         socket.app.log.out('error', module, err);
       }
       message.channel.send(`I set the volume to: ${wantedVolume}%`);
     } else {
-      message.reply(`The current volume is ${socket.musicData.volume * 100}%`)
+      message.reply(`The current volume is ${musicData.volume * 100}%`)
     }
   }
 };

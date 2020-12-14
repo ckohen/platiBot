@@ -1,5 +1,0 @@
-timeout https://discordapp.com/api/webhooks/735602651693056043/Z9SoCY1g259WuBPZ94kdGrN7KSe1ew6BeHL4fNDNZUolLhsAthPFLTMH9nLG3uotWRxB
-ban https://discordapp.com/api/webhooks/735603870662656091/ISoYCV3RCzn9R92QakzqVJt-M3VANSAYHCqw6-mqkq15N67veqNzBrkvhUPoxagCWOe9
-delete https://discordapp.com/api/webhooks/735603958596370472/icy5VS_rYLYaIfxvU9lG3nJyLFt8oU0yP_3ig-9nrFGLexSW2BIyOlxeccYlLeADKERr
-unban https://discordapp.com/api/webhooks/735604051181305956/3F7vFD1LTx37mr8U73Bcn8mSYxwf6X8m6VSr7ODSURhd9tE7HCdIStn_V0-u38P1x-l4
-review https://discordapp.com/api/webhooks/735604113731092630/mcBwMQiWrm7ccMwLjTk8PVqknbls1GStOSCg8it7_Nr-6-ZnHE_Ct8pueAyojzmcf2-i

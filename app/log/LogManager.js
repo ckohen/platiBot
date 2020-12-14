@@ -49,7 +49,7 @@ class LogManager {
         }),
         new wn.transports.File({
           handleExceptions: true,
-          filename: 'logs/app.log',
+          filename: this.opts.log.outputFile,
           level: this.opts.log.maxLevel,
         }),
       ],
@@ -79,7 +79,7 @@ class LogManager {
   async fatal(level, source, message) {
     const path = this.path(source);
     await this.out(level, path, message);
-    process.exit(1);
+    this.app.end(1);
   }
 
   /**

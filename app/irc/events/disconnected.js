@@ -1,5 +1,7 @@
 'use strict';
 
 module.exports = (socket, reason) => {
-  socket.app.log.fatal('critical', module, `Disconnected: ${reason}`);
+  if (!socket.app.ending) {
+    socket.app.log.out('warn', module, `Disconnected: ${reason}, attempting reconnect...`);
+  }
 };

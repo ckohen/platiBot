@@ -16,6 +16,7 @@ module.exports = {
     debug: 4,
   },
   maxLevel: process.env.LOG_LEVEL || 'error',
+  outputFile: process.env.LOG_LOCATION,
   webhookBase: 'https://discordapp.com/api/webhooks/',
   webhookLevels: {
     error: 'red',

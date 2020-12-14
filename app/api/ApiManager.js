@@ -48,25 +48,54 @@ class ApiManager extends Request {
   /**
    * Get the channel for the application's channel ID.
    * @param {Function} callback
+   * @param {Number} userId
    */
-  channel(callback) {
+  channel(callback, userId = false) {
+    if (userId) {
+      return this.get(`channels/${userId}`, {}, callback);
+    }
     this.get(`channels/${this.opts.twitch.channel.id}`, {}, callback);
+  }
+
+  /**
+   * Get the channel for the specfied user's channel name.
+   * @param {String} user
+   * @param {Function} callback
+   */
+  async userChannel(user, callback) {
+    try {
+      this.get(`users?login=${user}`, {}, (userObj) => {
+        let id = userObj.users[0]._id;
+        this.get(`channels/${id}`, {}, callback);
+      });
+    }
+    catch {
+      callback(false);
+    }
   }
 
   /**
    * Get a follow object for the given user ID.
    * @param {number} userId
+   * @param {Number} streamId
    * @returns {Promise<Request>}
    */
-  follow(userId) {
+  follow(userId, streamerId = false) {
+    if (streamId) {
+      return this.promise(`users/${userId}/follows/channels/${streamerId}`);
+    }
     return this.promise(`users/${userId}/follows/channels/${this.opts.twitch.channel.id}`);
   }
 
   /**
    * Get the stream for the application's channel ID.
    * @param {Function} callback
+   * @param {Number} userId
    */
-  stream(callback) {
+  stream(callback, userId = false) {
+    if (userId) {
+      return this.get(`streams/${userId}`, {}, callback);
+    }
     this.get(`streams/${this.opts.twitch.channel.id}`, {}, callback);
   }
 
@@ -83,29 +112,51 @@ class ApiManager extends Request {
    * Get the uptime for the application's stream.
    * @param {Function} callback
    * @param {boolean} [readOnly]
+   * @param {string} user
    */
-  uptime(callback, readOnly = false) {
-    const cached = cache.get('stream.uptime');
+  uptime(callback, user, readOnly = false) {
+    const cached = cache.get(`stream.uptime.${user}`);
+    const cachedId = cache.get(`stream.user.${user}`);
 
     if (cached !== null) {
       callback(cached);
       return;
     }
 
-    this.stream((body) => {
-      // Channel not live
-      if (body.stream === null) return callback();
+    if (cachedId !== null) {
+      this.stream((body) => {
+        this.uptimeCallback(body, callback, user, cachedId, readOnly);
+      }, cachedId)
+    }
 
-      // Stream start timestamp in milliseconds
-      const time = moment(body.stream.created_at).valueOf();
+    try {
+      this.get(`users?login=${user}`, {}, (userObj) => {
+        let id = userObj.users[0]._id;
+        this.stream((body) => {
+          this.uptimeCallback(body, callback, user, id, readOnly);
+        }, id);
+      });
+    }
+    catch {
+      return;
+    }
+  }
 
-      if (!readOnly) {
-        const fiveMins = 300000;
-        cache.put('stream.uptime', time, fiveMins);
-      }
+  uptimeCallback(body, callback, user, id, readOnly) {
+    // Channel not live
+    if (body.stream === null) return callback();
 
-      callback(time);
-    });
+    // Stream start timestamp in milliseconds
+    const time = moment(body.stream.created_at).valueOf();
+
+    if (!readOnly) {
+      const thirtyMins = 1800000;
+      const fiveMins = 300000;
+      cache.put(`stream.uptime.${user}`, time, fiveMins);
+      cache.put(`stream.user.${user}`, id, thirtyMins);
+    }
+
+    callback(time);
   }
 }
 

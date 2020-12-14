@@ -26,4 +26,8 @@ module.exports = {
 
   },
   token: process.env.DISCORD_TOKEN,
+  options: {
+    partials: ['MESSAGE', 'REACTION'],
+  }
+  ,
 };

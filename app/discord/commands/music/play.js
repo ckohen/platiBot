@@ -17,10 +17,11 @@ module.exports = {
 
     async run(socket, message, args) {
         query = args.join(' ');
-        const voiceChannel = message.member.voiceChannel;
+        const voiceChannel = message.member.voice.channel;
         if (!voiceChannel) return message.reply('Join a channel and try again');
 
         youtube = new discordYoutube(socket.app.options.youtube.token);
+        let musicData = socket.musicData.get(String(message.guild.id));
 
         if (
             // if the user entered a youtube playlist url
@@ -45,9 +46,9 @@ module.exports = {
                     try {
                         const video = await videosObj[i].fetch();
                         // this can be uncommented if you choose to limit the queue
-                        // if (socket.musicData.queue.length < 10) {
+                        // if (musicData.queue.length < 10) {
                         //
-                        socket.musicData.queue.push(
+                        musicData.queue.push(
                             constructSongObj(
                                 video,
                                 voiceChannel,
@@ -65,10 +66,10 @@ module.exports = {
                 }
             }
             waitNotify.delete();
-            if (socket.musicData.isPlaying == false) {
-                socket.musicData.isPlaying = true;
-                return playSong(socket.musicData.queue, message, socket);
-            } else if (socket.musicData.isPlaying == true) {
+            if (musicData.isPlaying == false) {
+                musicData.isPlaying = true;
+                return playSong(musicData.queue, message, socket);
+            } else if (musicData.isPlaying == true) {
                 return message.channel.send(
                     `Playlist - :musical_note:  ${playlist.title} :musical_note: has been added to queue`
                 );
@@ -100,16 +101,16 @@ module.exports = {
             //     'There are too many songs in the queue already, skip or wait a bit'
             //   );
             // }
-            socket.musicData.queue.push(
+            musicData.queue.push(
                 constructSongObj(video, voiceChannel, message.member.user)
             );
             if (
-                socket.musicData.isPlaying == false ||
-                typeof socket.musicData.isPlaying == 'undefined'
+                musicData.isPlaying == false ||
+                typeof musicData.isPlaying == 'undefined'
             ) {
-                socket.musicData.isPlaying = true;
-                return playSong(socket.musicData.queue, message, socket);
-            } else if (socket.musicData.isPlaying == true) {
+                musicData.isPlaying = true;
+                return playSong(musicData.queue, message, socket);
+            } else if (musicData.isPlaying == true) {
                 return message.channel.send(`${video.title} added to queue`);
             }
         }
@@ -168,20 +169,20 @@ module.exports = {
                         //     'There are too many songs in the queue already, skip or wait a bit'
                         //   );
                         // }
-                        socket.musicData.queue.push(
+                        musicData.queue.push(
                             constructSongObj(
                                 video,
                                 voiceChannel,
                                 message.member.user
                             )
                         );
-                        if (socket.musicData.isPlaying == false) {
-                            socket.musicData.isPlaying = true;
+                        if (musicData.isPlaying == false) {
+                            musicData.isPlaying = true;
                             if (songEmbed) {
                                 songEmbed.delete();
                             }
-                            playSong(socket.musicData.queue, message, socket);
-                        } else if (socket.musicData.isPlaying == true) {
+                            playSong(musicData.queue, message, socket);
+                        } else if (musicData.isPlaying == true) {
                             if (songEmbed) {
                                 songEmbed.delete();
                             }
@@ -206,60 +207,65 @@ module.exports = {
                 );
             });
 
-            
-          
+
+
     },
 
 };
 
 function playSong(queue, message, socket) {
+    musicData = socket.musicData.get(String(message.guild.id));
     queue[0].voiceChannel
         .join()
         .then(function (connection) {
             const dispatcher = connection
-                .playStream(
+                .play(
                     ytdl(queue[0].url, {
                         quality: 'highestaudio',
                         highWaterMark: 1024 * 1024 * 10
                     })
                 )
                 .on('start', function () {
-                    socket.musicData.songDispatcher = dispatcher;
-                    connection.player.streamingData.pausedTime = 0;
-                    dispatcher.setVolume(socket.musicData.volume);
+                    musicData.songDispatcher = dispatcher;
+                    dispatcher.pausedTime = 0;
+                    dispatcher.setVolume(musicData.volume);
                     dispatcher.setBitrate(192);
                     videoEmbed = socket.getEmbed('play', [queue]);
-                    if (queue[1]) videoEmbed.addField('Next Song:', queue[1].title);``
+                    if (queue[1]) videoEmbed.addField('Next Song:', queue[1].title); ``
                     // Comment out to disable auto notify on next song
                     message.channel.send(videoEmbed);
-                    socket.musicData.nowPlaying = queue[0];
+                    musicData.nowPlaying = queue[0];
                     return queue.shift();
                 })
-                .on('end', function () {
+                .on('finish', function () {
                     if (queue.length >= 1) {
                         return playSong(queue, message, socket);
                     } else {
-                        socket.musicData.isPlaying = false;
-                        socket.musicData.nowPlaying = null;
-                        socket.musicData.songDispatcher = null;
-                        if (message.guild.me.voiceChannel) {
-                            return message.guild.me.voiceChannel.leave();
+                        musicData.isPlaying = false;
+                        musicData.nowPlaying = null;
+                        musicData.songDispatcher = null;
+                        if (message.guild.me.voice.channel) {
+                            return message.guild.me.voice.channel.leave();
                         }
                     }
                 })
                 .on('error', function (e) {
-                    message.reply('Cannot play song');
+                    message.reply(`Cannot play song \`${queue[0].title}\`, skipping`);
                     console.error(e);
-                    socket.musicData.queue.length = 0;
-                    socket.musicData.isPlaying = false;
-                    socket.musicData.nowPlaying = null;
-                    socket.musicData.songDispatcher = null;
-                    return message.guild.me.voiceChannel.leave();
+                    if (queue.length > 1) {
+                        queue.shift();
+                        return playSong(queue, message, socket);
+                    } else {
+                        musicData.isPlaying = false;
+                        musicData.nowPlaying = null;
+                        musicData.songDispatcher = null;
+                        return message.guild.me.voice.channel.leave();
+                    }
                 });
         })
         .catch(function (e) {
             console.error(e);
-            return message.guild.me.voiceChannel.leave();
+            return message.guild.me.voice.channel.leave();
         });
 }
 
@@ -274,16 +280,14 @@ function constructSongObj(video, voiceChannel, user) {
         thumbnail: video.thumbnails.high.url,
         voiceChannel,
         memberDisplayName: user.username,
-        memberAvatar: user.avatarURL
+        memberAvatar: user.displayAvatarURL()
     };
 }
 
 // prettier-ignore
 function formatDuration(durationObj) {
-    const duration = `${durationObj.hours ? (durationObj.hours + ':') : ''}${
-        durationObj.minutes ? durationObj.minutes : '00'
-        }:${
-        (durationObj.seconds < 10)
+    const duration = `${durationObj.hours ? (durationObj.hours + ':') : ''}${durationObj.minutes ? durationObj.minutes : '00'
+        }:${(durationObj.seconds < 10)
             ? ('0' + durationObj.seconds)
             : (durationObj.seconds
                 ? durationObj.seconds

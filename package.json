@@ -1,19 +1,19 @@
 {
-  "name": "wildfire",
+  "name": "corncierge",
   "version": "1.1.0",
-  "description": "A moderation bot for Twitch and Discord.",
+  "description": "A moderation and command bot for Twitch and a fully integrated Discord bot.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Nordiago",
+  "author": "ckohen",
   "license": "ISC",
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
     "db-migrate": "^0.11.11",
     "db-migrate-mysql": "^2.1.1",
     "discord-youtube-api": "^0.1.0",
-    "discord.js": "^11.6.4",
+    "discord.js": "^12.4.1",
     "dotenv": "^8.2.0",
     "ffmpeg": "0.0.4",
     "ffmpeg-static": "^4.2.6",
@@ -33,7 +33,7 @@
     "uuid": "^3.4.0",
     "winston": "^3.3.3",
     "ws": "^7.3.1",
-    "ytdl-core": "^3.2.1"
+    "ytdl-core": "^4.1.2"
   },
   "devDependencies": {
     "eslint": "^6.7.2",

@@ -7,16 +7,17 @@ module.exports = {
   description: 'Display the currently playing song',
 
   async run(socket, message) {
-    if (!socket.musicData.isPlaying && !socket.musicData.nowPlaying) {
+    let musicData = socket.musicData.get(String(message.guild.id));
+    if (!musicData.isPlaying && !musicData.nowPlaying) {
       return message.reply('There is no song playing right now!');
     }
 
-    const video = socket.musicData.nowPlaying;
+    const video = musicData.nowPlaying;
     let description;
     if (video.duration == 'Live Stream') {
       description = 'Live Stream';
     } else {
-      description = playbackBar(socket, video);
+      description = playbackBar(musicData, video);
     }
 
     videoEmbed = socket.getEmbed('videoEmbed', [video, description]);
@@ -26,8 +27,8 @@ module.exports = {
   }
 };
 
-function playbackBar(sock, video) {
-  const passedTimeInMS = sock.musicData.songDispatcher.time;
+function playbackBar(data, video) {
+  const passedTimeInMS = data.songDispatcher.streamTime - data.songDispatcher.pausedTime;
   const passedTimeInMSObj = {
     seconds: Math.floor((passedTimeInMS / 1000) % 60),
     minutes: Math.floor((passedTimeInMS / (1000 * 60)) % 60),

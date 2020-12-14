@@ -1,3 +1,5 @@
 module.exports = (socket) => {
-    socket.connect(socket.driver, socket.app);
+    if (!socket.app.ending) {
+        socket.connect(socket.driver, socket.app);
+    }
 }
