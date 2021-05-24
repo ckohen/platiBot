@@ -39,4 +39,16 @@ module.exports = {
   RequestManager: require('./http/requests/RequestManager'),
   TableManager: require('./database/tables/TableManager'),
   TwitchCommandManager: require('./irc/commands/TwitchCommandManager'),
+
+  // Twitch
+  TwitchBase: require('./twitch/structures/TwitchBase'),
+  TwitchCategory: require('./twitch/structures/TwitchCategory'),
+  TwitchChannel: require('./twitch/structures/TwitchChannel'),
+  TwitchFollow: require('./twitch/structures/TwitchFollow'),
+  TwitchHypeTrain: require('./twitch/structures/TwitchHypeTrain'),
+  TwitchRedemption: require('./twitch/structures/TwitchHypeTrain'),
+  TwitchReward: require('./twitch/structures/TwitchReward'),
+  TwitchStream: require('./twitch/structures/TwitchStream'),
+  TwitchTag: require('./twitch/structures/TwitchTag'),
+  TwitchUser: require('./twitch/structures/TwitchUser'),
 };

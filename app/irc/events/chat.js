@@ -31,6 +31,7 @@ module.exports = async (socket, channel, user, messageRaw, self) => {
   // Check for existing commands
   let command = socket.cache.commands.get(input);
 
+  // TODO Replace static assignment with 2 allowable searches per channel
   if (!command) {
     if (message.indexOf('bonk') > -1) {
       command = socket.cache.commands.get('!bonk');
